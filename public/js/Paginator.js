@@ -64,7 +64,7 @@ var Paginator = {
             postIDs.push(post.id);
         });
         // Appending the output
-        $(Paginator.container).append(htmlOut.join('<hr class="removelinha">') + '<hr class="removelinha">').fadeIn('slow');
+        $(Paginator.container).append(htmlOut.join('<hr>') + '<hr>').fadeIn('slow');
         // Init swiper for posts
         Post.initPostsMediaModule();
         // Init gallery module for each post

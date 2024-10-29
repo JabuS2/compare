@@ -190,20 +190,4 @@ class User extends \TCG\Voyager\Models\User implements MustVerifyEmail
         return $this->hasOne('App\Model\CreatorOffer');
     }
 
-    function parseMentions($text) {
-        return preg_replace_callback('/@(\w+)/', function($matches) {
-            $username = $matches[1];
-            // Busca o usuário pelo nome de usuário (username)
-            $user = User::where('username', $username)->first();
-            
-            if ($user) {
-                // Cria o link para o perfil do usuário
-                return '<a href="https://closyflix.com/' . $user->username . '">@' . $user->username . '</a>';
-            }
-
-            // Se o usuário não for encontrado, retorna o texto original
-            return $matches[0];
-        }, $text);
-    }
-
 }

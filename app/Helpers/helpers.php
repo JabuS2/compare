@@ -3,7 +3,6 @@
 use App\Providers\GenericHelperServiceProvider;
 use App\Providers\InstallerServiceProvider;
 use Illuminate\Support\Facades\Storage;
-use App\User;
 
 if (! function_exists('getSetting')) {
     function getSetting($key, $default = null)
@@ -95,19 +94,4 @@ function checkForMysqlND(){
         return true;
     }
     return false;
-}
-
-if (!function_exists('parseMentions')) {
-    function parseMentions($text) {
-        return preg_replace_callback('/@(\w+)/', function($matches) {
-            $username = $matches[1];
-            $user = User::where('username', $username)->first();
-
-            if ($user) {
-                return '<a href="https://closyflix.com/' . $user->username . '">@' . $user->username . '</a>';
-            }
-
-            return $matches[0];
-        }, $text);
-    }
 }

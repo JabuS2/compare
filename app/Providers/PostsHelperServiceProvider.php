@@ -186,11 +186,10 @@ class PostsHelperServiceProvider extends ServiceProvider
      * @param bool $mediaType
      * @return array
      */
-    public static function getUserPosts($userID, $encodePostsToHtml = false, $pageNumber = false, $mediaType = false, $hasSub = false, $paidFilter = 'all')
+    public static function getUserPosts($userID, $encodePostsToHtml = false, $pageNumber = false, $mediaType = false, $hasSub = false)
     {
-        return self::getFilteredPosts($userID, $encodePostsToHtml, $pageNumber, $mediaType, true, $hasSub, false, false, '', $paidFilter);
+        return self::getFilteredPosts($userID, $encodePostsToHtml, $pageNumber, $mediaType, true, $hasSub, false);
     }
-    
 
     /**
      * Gets list of posts for the bookmarks page.
@@ -215,21 +214,13 @@ class PostsHelperServiceProvider extends ServiceProvider
      * @param bool $mediaType
      * @return array
      */
-    public static function getFilteredPosts($userID, $encodePostsToHtml, $pageNumber, $mediaType, $ownPosts, $hasSub, $bookMarksOnly, $sortOrder = false, $searchTerm = '',$paidFilter = 'all')
+    public static function getFilteredPosts($userID, $encodePostsToHtml, $pageNumber, $mediaType, $ownPosts, $hasSub, $bookMarksOnly, $sortOrder = false, $searchTerm = '')
     {
         $relations = ['user', 'reactions', 'attachments', 'bookmarks', 'postPurchases'];
 
         // Fetching basic posts information
         $posts = Post::withCount('tips')
             ->with($relations);
-
-        // Filtro por posts pagos ou gratuitos
-        if ($paidFilter === 'paid') {
-            $posts->where('price', '>', 0);
-        } elseif ($paidFilter === 'free') {
-            $posts->where('price', '=', 0);
-        }
-
 
         // For profile page
         if ($ownPosts) {

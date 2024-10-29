@@ -14,16 +14,15 @@
             <div class="position-absolute separator">
                 <div class="d-flex">
 
-                    @if(Auth::user()->id == $comment->author->id || Auth::user()->id == $comment->post->user_id)
+                    @if(Auth::user()->id == $comment->author->id)
                         <span class="ml-1 h-pill h-pill-primary rounded react-button" data-toggle="tooltip" data-placement="top" title="{{__("Delete")}}" onclick="Post.showDeleteCommentDialog({{$comment->post->id}},{{$comment->id}})">
-                            @include('elements.icon',['icon'=>'trash-outline'])
+                             @include('elements.icon',['icon'=>'trash-outline'])
                         </span>
                     @else
                         <span class="h-pill h-pill-primary rounded react-button {{PostsHelper::didUserReact($comment->reactions) ? 'active' : ''}}" data-toggle="tooltip" data-placement="top" title="{{__("Like")}}" onclick="Post.reactTo('comment',{{$comment->id}})">
-                            @include('elements.icon',['icon'=>'heart-outline'])
-                        </span>
+                         @include('elements.icon',['icon'=>'heart-outline'])
+                    </span>
                     @endif
-
                 </div>
 
             </div>
@@ -37,28 +36,6 @@
                     <span class="comment-reactions-label">{{trans_choice('likes',count($comment->reactions))}}</span>
                 </div>
                 <div class="ml-2"><a href="javascript:void(0)" onclick="Post.addReplyUser('{{$comment->author->username}}')" class="text-muted">{{__('Reply')}}</a></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-<div id="comment-delete-dialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">{{ __('Delete Comment') }}</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>{{ __('Are you sure you want to delete this comment?') }}</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Cancel') }}</button>
-                <button type="button" class="btn btn-danger" onclick="Post.deleteComment()">{{ __('Delete') }}</button>
             </div>
         </div>
     </div>

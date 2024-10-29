@@ -27,7 +27,7 @@
                     <div class="icon-wrapper d-flex justify-content-center align-items-center">
                         @include('elements.icon',['icon'=>'home-outline','variant'=>'large'])
                     </div>
-                    <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('Home')}}</span>
+                    <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('Home')}}</span>
                 </div>
             </a>
         </li>
@@ -45,7 +45,7 @@
                             </g>
                         </svg>
                     </div>
-                    <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('Search')}}</span>
+                    <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('Search')}}</span>
                 </div>
             </a>
         </li>
@@ -62,7 +62,7 @@
                                 {{!isset($notificationsCountOverride) ? NotificationsHelper::getUnreadNotifications()->total : $notificationsCountOverride->total}}
                             </div>
                         </div>
-                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('Notifications')}}</span>
+                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('Notifications')}}</span>
                     </div>
                 </a>
             </li>
@@ -75,7 +75,7 @@
                                 {{NotificationsHelper::getUnreadMessages()}}
                             </div>
                         </div>
-                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('Messages')}}</span>
+                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('Messages')}}</span>
                     </div>
                 </a>
             </li>
@@ -89,7 +89,7 @@
                                     {{StreamsHelper::getPublicLiveStreamsCount()}}
                                 </div>
                             </div>
-                            <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('Streams')}}</span>
+                            <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('Streams')}}</span>
                         </div>
 
                     </a>
@@ -101,7 +101,7 @@
                         <div class="icon-wrapper d-flex justify-content-center align-items-center">
                             @include('elements.icon',['icon'=>'bookmark-outline','variant'=>'large'])
                         </div>
-                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('Bookmarks')}}</span>
+                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('Bookmarks')}}</span>
                     </div>
                 </a>
             </li>
@@ -111,7 +111,7 @@
                         <div class="icon-wrapper d-flex justify-content-center align-items-center">
                             @include('elements.icon',['icon'=>'list-outline','variant'=>'large'])
                         </div>
-                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('Lists')}}</span>
+                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('Lists')}}</span>
                     </div>
                 </a>
             </li>
@@ -121,7 +121,7 @@
                         <div class="icon-wrapper d-flex justify-content-center align-items-center">
                             @include('elements.icon',['icon'=>'people-circle-outline','variant'=>'large'])
                         </div>
-                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('Subscriptions')}}</span>
+                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('Subscriptions')}}</span>
                     </div>
                 </a>
             </li>
@@ -131,7 +131,7 @@
                         <div class="icon-wrapper d-flex justify-content-center align-items-center">
                             @include('elements.icon',['icon'=>'person-circle-outline','variant'=>'large'])
                         </div>
-                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('My profile')}}</span>
+                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('My profile')}}</span>
                     </div>
                 </a>
             </li>
@@ -144,7 +144,7 @@
                         <div class="icon-wrapper d-flex justify-content-center align-items-center">
                             @include('elements.icon',['icon'=>'compass-outline','variant'=>'large'])
                         </div>
-                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('Explore')}}</span>
+                        <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('Explore')}}</span>
                     </div>
                 </a>
             </li>
@@ -156,7 +156,7 @@
                     <div class="icon-wrapper d-flex justify-content-center align-items-center">
                         @include('elements.icon',['icon'=>'ellipsis-horizontal-circle-outline','variant'=>'large'])
                     </div>
-                    <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label" style="font-size: 16px !important">{{__('More')}}</span>
+                    <span class="d-none d-md-block d-xl-block d-lg-block ml-2 text-truncate side-menu-label">{{__('More')}}</span>
                 </div>
             </a>
         </li>

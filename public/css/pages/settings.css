@@ -14,7 +14,7 @@
 }
 
 .verify-form .dropzone{
-    min-height: auto !important;
+    min-height: auto;!important;
 }
 
 .verify-form  .dropzone .dz-preview.dz-image-preview {

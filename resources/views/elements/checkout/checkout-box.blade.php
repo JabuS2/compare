@@ -99,8 +99,6 @@
                                                             </div>
                                                         </div>
                                                     </div>
-
-<!--
                                                     <div class="form-group">
                                                         <label for="countrySelect">
                                                             <span>{{__('Country')}}</span>
@@ -139,8 +137,6 @@
                                                         <textarea rows="2" type="text" name="billingAddress" onblur="checkout.validateBillingAddressField()" placeholder="{{__('Street address, apartment, suite, unit')}}" class="form-control w-100 uifield-billing_address" required></textarea>
                                                     </div>
                                                 </div>
-                                                -->
-
                                                 <div class="billing-agreement-error error text-danger d-none">{{__('Please complete all billing details')}}</div>
                                             </div>
                                         </form>

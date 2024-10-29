@@ -521,24 +521,13 @@ class PostsController extends Controller
      */
     public function deleteComment(Request $request){
         $commentID = $request->get('id');
-        $comment = PostComment::where('id', $commentID)->first();
-        
-        if (!$comment) {
-            return response()->json(['success' => false, 'errors' => [__('Comment not found')], 'message' => __('Comment not found')], 404);
+        $comment = PostComment::where('id', $commentID)->where('user_id', Auth::user()->id)->first();
+        if(!$comment){
+            return response()->json(['success' => false, 'errors' => [__('Not authorized')], 'message' => __('Comment not found')], 403);
         }
-        
-        // Verifica se o usuário é o autor do comentário ou o dono do post
-        $isAuthorOrPostOwner = ($comment->user_id == Auth::user()->id) || ($comment->post->user_id == Auth::user()->id);
-        
-        if (!$isAuthorOrPostOwner) {
-            return response()->json(['success' => false, 'errors' => [__('Not authorized')], 'message' => __('You do not have permission to delete this comment')], 403);
-        }
-
-        // Deleta o comentário
         $comment->delete();
         return response()->json(['success' => true, 'message' => __('Comment deleted successfully.')]);
     }
-
 
     /**
      * Validates post access
