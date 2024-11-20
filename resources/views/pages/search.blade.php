@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
          ])->withFullUrl()
     !!}
 
-    <style>
+<style>
 .profiles-container {
     display: flex !important;
     flex-wrap: wrap !important;
@@ -149,7 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
         flex: 1 1 calc(50% - 16px) !important; /* Dois cards por linha */
     }
 }
-
 </style>
 
 @stop

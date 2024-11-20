@@ -42,131 +42,164 @@ class ProfileController extends Controller
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      * @throws \Exception
      */
-    public function index(Request $request)
-    {
-        // Forcing no cache, in order to be able to return from post over
-        // profile w/o saving state, and be able to paginate from where we left of
-        header('Cache-Control: no-cache, no-store, must-revalidate'); // HTTP 1.1.
-        header('Pragma: no-cache'); // HTTP 1.0.
-        header('Expires: 0 '); // Proxies.
+public function index(Request $request)
+{
+    // Forçando sem cache para poder retornar à página de perfil sem salvar o estado
+    header('Cache-Control: no-cache, no-store, must-revalidate'); 
+    header('Pragma: no-cache'); 
+    header('Expires: 0');
 
-        // General access rules
-        $this->setAccessRules();
-        if (!$this->user->public_profile && !Auth::check()) {
-            abort(403,__('Profile access is denied.'));
-        }
+    // Regras gerais de acesso
+    $this->setAccessRules();
+    if (!$this->user->public_profile && !Auth::check()) {
+        abort(403, __('Profile access is denied.'));
+    }
 
-        // Geoblocking rule
-        if($this->isGeoLocationBlocked()){
-            abort(403,__('Profile access is denied.'));
-        }
+    // Regras de geoblocking
+    if ($this->isGeoLocationBlocked()) {
+        abort(403, __('Profile access is denied.'));
+    }
 
-        $data['showLoginDialog'] = false;
-        $errors = session()->get('errors', app(ViewErrorBag::class));
-        if ($errors->getBag('default')->has('email') || $errors->getBag('default')->has('name') || $errors->getBag('default')->has('password')) {
-            $data['showLoginDialog'] = true;
-        }
+    $data['showLoginDialog'] = false;
+    $errors = session()->get('errors', app(ViewErrorBag::class));
+    if ($errors->getBag('default')->has('email') || $errors->getBag('default')->has('name') || $errors->getBag('default')->has('password')) {
+        $data['showLoginDialog'] = true;
+    }
 
-        $pixels =  UserPixel::where('user_id', $this->user->id)->get()->all(); 
-        $pixel_user = array();
+    // Pixels
+    $pixels = UserPixel::where('user_id', $this->user->id)->get();
+    $pixel_user = [];
+    foreach ($pixels as $pixel) {
+        $pixel_user[$pixel->type . "-head"] = $pixel->head;
+        $pixel_user[$pixel->type . "-body"] = $pixel->body;
+    }
 
-        foreach($pixels as $pixel){
-            $pixel_user[$pixel->type."-head"] = $pixel->head;
-            $pixel_user[$pixel->type."-body"] = $pixel->body;
-        }
+    // Filtros de tipo de mídia e tipo de postagem
+    $postsFilter = $request->get('filter') ?? false;
+    $paidFilter = $request->get('paidFilter') ?? 'all';
 
-        $postsFilter = $request->get('filter') ? $request->get('filter') : false;
-        $startPage = PostsHelperServiceProvider::getFeedStartPage(PostsHelperServiceProvider::getPrevPage($request));
-        $posts = PostsHelperServiceProvider::getUserPosts($this->user->id, false, $startPage, $postsFilter, $this->hasSub);
-        PostsHelperServiceProvider::shouldDeletePaginationCookie($request);
-        $posts = $posts->appends($_GET);
+    // Página inicial
+    $startPage = PostsHelperServiceProvider::getFeedStartPage(
+        PostsHelperServiceProvider::getPrevPage($request)
+    );
 
-        $offer = [];
-        if ($this->user->offer) {
-            $discount = 100 - (($this->user->profile_access_price * 100) / $this->user->offer->old_profile_access_price);
-            $expiringDate = $this->user->offer->expires_at;
-            $currentDate = Carbon::now();
-            if ($discount > 0 && $expiringDate > $currentDate) {
-                $offer = [
-                    'discountAmount' => $discount,
-                    'daysRemaining' => $expiringDate->diffInDays($currentDate),
-                    'expiresAt' => $expiringDate,
-                ];
-            }
-        }
+    // Obter posts do usuário com filtros e paginação (paginação e filtro aplicados no helper)
+    $posts = PostsHelperServiceProvider::getUserPosts(
+        $this->user->id,
+        false,
+        $startPage,
+        $postsFilter,
+        $this->hasSub,
+        $paidFilter // adicionando o filtro pago/não pago
+    );
 
-        $transaction = Transaction::where('sender_user_id', Auth::id())->where('recipient_user_id', $this->user->id)->where('updated_at', '>=', Carbon::now()->subMinutes(10)->toDateTimeString())->where('status', Transaction::APPROVED_STATUS)->orderBy('id', 'desc')->first();
+    // Demais dados para a view
+    PostsHelperServiceProvider::shouldDeletePaginationCookie($request);
 
-        $data = array_merge($data,[
-            'last_transaction' => $transaction,
-            'pixel_user' => $pixel_user,
-            'user' => $this->user,
-            'hasSub' => $this->hasSub,
-            'posts' => $posts,
-            'activeFilter' => $postsFilter,
-            'filterTypeCounts' => PostsHelperServiceProvider::getUserMediaTypesCount($this->user->id),
-            'offer'=> $offer,
-            'viewerHasChatAccess'=> $this->viewerHasChatAccess,
-        ]);
-
-        if($postsFilter == 'streams'){
-            $streams = StreamsServiceProvider::getPublicStreams(['userId' => $this->user->id, 'status' => 'all']);
-            $data['streams'] = $streams;
-        }
-        $data['hasActiveStream'] = StreamsServiceProvider::getUserInProgressStream(true, $this->user->id) ? true : false;
-
-        $data['recentMedia'] = false;
-        if ($this->hasSub || (Auth::check() && Auth::user()->id == $this->user->id) || (getSetting('profiles.allow_users_enabling_open_profiles') && $this->user->open_profile)) {
-            $data['recentMedia'] = PostsHelperServiceProvider::getLatestUserAttachments($this->user->id, 'image');
-        }
-
-        $additionalAssets = [];
-        if(getSetting('profiles.allow_profile_qr_code')){
-            $additionalAssets[] = '/libs/easyqrcodejs/dist/easy.qrcode.min.js';
-        }
-        $data['additionalAssets'] = $additionalAssets;
-
-        $paginatorConfig = [
-            'next_page_url' => str_replace(['?page=', '?filter='], ['/posts?page=', '/posts?filter='], $posts->nextPageUrl()),
-            'prev_page_url' => str_replace(['?page=', '?filter='], ['/posts?page=', '/posts?filter='], $posts->previousPageUrl()),
-            'current_page' => $posts->currentPage(),
-            'total' => $posts->total(),
-            'per_page' => $posts->perPage(),
-            'hasMore' => $posts->hasMorePages(),
-        ];
-
-        if($postsFilter == 'streams') {
-            $paginatorConfig = [
-                'next_page_url' => str_replace(['?page=', '?filter='], ['/streams?page=', '/streams?filter='], $streams->nextPageUrl()),
-                'prev_page_url' => str_replace(['?page=', '?filter='], ['/streams?page=', '/streams?filter='], $streams->previousPageUrl()),
-                'current_page' => $streams->currentPage(),
-                'total' => $streams->total(),
-                'per_page' => $streams->perPage(),
-                'hasMore' => $streams->hasMorePages(),
+    $offer = [];
+    if ($this->user->offer) {
+        $discount = 100 - (($this->user->profile_access_price * 100) / $this->user->offer->old_profile_access_price);
+        $expiringDate = $this->user->offer->expires_at;
+        $currentDate = Carbon::now();
+        if ($discount > 0 && $expiringDate > $currentDate) {
+            $offer = [
+                'discountAmount' => $discount,
+                'daysRemaining' => $expiringDate->diffInDays($currentDate),
+                'expiresAt' => $expiringDate,
             ];
         }
-
-        // Seo description for share urls
-        $rawDescription = getSetting('profiles.allow_profile_bio_markdown') && $this->user->bio ? strip_tags(GenericHelperServiceProvider::parseProfileMarkdownBio($this->user->bio)) : $this->user->bio;
-        $data['seo_description'] = $rawDescription ? str_replace(array("\n", "\r"), ' ', substr($rawDescription,0, 90)) . (strlen($rawDescription) > 90 ? '...' : '') : null;
-
-        Session::put('lastProfileUrl', route('profile',['username'=> $this->user->username]));
-
-        JavaScript::put([
-            'paginatorConfig' => $paginatorConfig,
-            'messengerVars' => [
-                'bootFullMessenger' => false,
-            ],
-            'initialPostIDs' => $posts->pluck('id')->toArray(),
-            'profileVars' => [
-                'user_id' =>  $this->user->id,
-            ],
-            'showLoginDialog' => $data['showLoginDialog'],
-            'postsFilter' => $postsFilter
-        ]);
-
-        return view('pages.profile', $data);
     }
+
+    $transaction = Transaction::where('sender_user_id', Auth::id())
+        ->where('recipient_user_id', $this->user->id)
+        ->where('updated_at', '>=', Carbon::now()->subMinutes(10)->toDateTimeString())
+        ->where('status', Transaction::APPROVED_STATUS)
+        ->orderBy('id', 'desc')
+        ->first();
+
+    $data = array_merge($data, [
+        'last_transaction' => $transaction,
+        'pixel_user' => $pixel_user,
+        'user' => $this->user,
+        'hasSub' => $this->hasSub,
+        'posts' => $posts,
+        'activeFilter' => $postsFilter,
+        'paidFilter' => $paidFilter,
+        'filterTypeCounts' => PostsHelperServiceProvider::getUserMediaTypesCount($this->user->id),
+        'offer' => $offer,
+        'viewerHasChatAccess' => $this->viewerHasChatAccess,
+    ]);
+
+    if ($postsFilter == 'streams') {
+        $streams = StreamsServiceProvider::getPublicStreams(['userId' => $this->user->id, 'status' => 'all']);
+        $data['streams'] = $streams;
+    }
+
+    $data['hasActiveStream'] = StreamsServiceProvider::getUserInProgressStream(true, $this->user->id) ? true : false;
+
+    $data['recentMedia'] = false;
+    if ($this->hasSub || (Auth::check() && Auth::user()->id == $this->user->id) || (getSetting('profiles.allow_users_enabling_open_profiles') && $this->user->open_profile)) {
+        $data['recentMedia'] = PostsHelperServiceProvider::getLatestUserAttachments($this->user->id, 'image');
+    }
+
+    $additionalAssets = [];
+    if (getSetting('profiles.allow_profile_qr_code')) {
+        $additionalAssets[] = '/libs/easyqrcodejs/dist/easy.qrcode.min.js';
+    }
+    $data['additionalAssets'] = $additionalAssets;
+
+    // Configuração de paginação para uso no frontend
+    $paginatorConfig = [
+        'next_page_url' => str_replace(
+            ['?page=', '?filter=', '?paidFilter='],
+            ['/posts?page=', '/posts?filter=', '/posts?paidFilter='],
+            $posts->nextPageUrl()
+        ),
+        'prev_page_url' => str_replace(
+            ['?page=', '?filter=', '?paidFilter='],
+            ['/posts?page=', '/posts?filter=', '/posts?paidFilter='],
+            $posts->previousPageUrl()
+        ),
+        'current_page' => $posts->currentPage(),
+        'total' => $posts->total(),
+        'per_page' => $posts->perPage(),
+        'hasMore' => $posts->hasMorePages(),
+    ];
+
+
+    if ($postsFilter == 'streams') {
+        $paginatorConfig = [
+            'next_page_url' => str_replace(['?page=', '?filter='], ['/streams?page=', '/streams?filter='], $streams->nextPageUrl()),
+            'prev_page_url' => str_replace(['?page=', '?filter='], ['/streams?page=', '/streams?filter='], $streams->previousPageUrl()),
+            'current_page' => $streams->currentPage(),
+            'total' => $streams->total(),
+            'per_page' => $streams->perPage(),
+            'hasMore' => $streams->hasMorePages(),
+        ];
+    }
+
+    // SEO description
+    $rawDescription = getSetting('profiles.allow_profile_bio_markdown') && $this->user->bio ? strip_tags(GenericHelperServiceProvider::parseProfileMarkdownBio($this->user->bio)) : $this->user->bio;
+    $data['seo_description'] = $rawDescription ? str_replace(["\n", "\r"], ' ', substr($rawDescription, 0, 90)) . (strlen($rawDescription) > 90 ? '...' : '') : null;
+
+    Session::put('lastProfileUrl', route('profile', ['username' => $this->user->username]));
+
+    JavaScript::put([
+        'paginatorConfig' => $paginatorConfig,
+        'messengerVars' => [
+            'bootFullMessenger' => false,
+        ],
+        'initialPostIDs' => $posts->pluck('id')->toArray(),
+        'profileVars' => [
+            'user_id' => $this->user->id,
+        ],
+        'showLoginDialog' => $data['showLoginDialog'],
+        'postsFilter' => $postsFilter
+    ]);
+
+    return view('pages.profile', $data);
+}
+
 
     /**
      * Fetches user posts, to be paginated into the profile page.

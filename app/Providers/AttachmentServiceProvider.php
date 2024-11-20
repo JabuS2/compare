@@ -375,49 +375,44 @@ public static function createAttachment($file, $directory, $generateThumbnail)
                 }
                 $filePath = $newfilePath;
             }
-            elseif (getSetting('media.transcoding_driver') === 'coconut'){
-                if($initialFileExtension == 'mp4' && !getSetting('media.coconut_enforce_mp4_conversion')){
+            elseif (getSetting('media.transcoding_driver') === 'coconut') {
+                if ($initialFileExtension == 'mp4' && !getSetting('media.coconut_enforce_mp4_conversion')) {
                     $filePath = $directory.'/'.$fileId.'.'.$fileExtension;
                     $storage->put($filePath, $fileContent, 'public');
-                }
-                else{
+                } else {
                     $coconut = new \Coconut\Client(getSetting('media.coconut_api_key'));
-                    // Uploading the original video onto s3
+                    // Uploading the original video onto the storage (S3, Digital Ocean)
                     $filePath = $directory.'/tmp/'.$fileId.'.'.$fileExtension;
                     $storage->put($filePath, $fileContent, 'public');
                     Storage::url($filePath);
-
-                    // Setting up the coconut notification
+            
+                    // Setting up the Coconut notification
                     $coconut->notification = [
                         'type' => 'http',
-                        'url' => env('COCONUT_WEBHOOK_URL') ? env('COCONUT_WEBHOOK_URL') : route('transcoding.coconut.update'), // TODO: Maybe test this on live
-                        "params" => [
-                            'attachmentId' => $fileId
+                        'url' => env('COCONUT_WEBHOOK_URL') ? env('COCONUT_WEBHOOK_URL') : route('transcoding.coconut.update'),
+                        'params' => [
+                            'attachmentId' => $fileId,
                         ],
                     ];
-
-                    // Setting up the storage for coconut
-                    if(getSetting('storage.driver') === 'public'){
+            
+                    // Setting up the storage for Coconut
+                    if (getSetting('storage.driver') === 'public') {
                         throw new \Exception("Local storage driver is not supported by Coconut.");
                     }
                     $coconut->storage = self::getCoconutStorageSettings(getSetting('storage.driver'));
-
-                    $videoQualityPreset = self::$videoEncodingPresets[str_replace("coconut_","",getSetting('media.coconut_video_conversion_quality_preset'))];
-                    // Sending the transcoding request
+            
+                    // Video quality presets
+                    $videoQualityPreset = self::$videoEncodingPresets[str_replace("coconut_", "", getSetting('media.coconut_video_conversion_quality_preset'))];
+            
+                    // Sending the transcoding request with HLS and MP4
                     $tempFileUrl = Storage::url($filePath);
-                    if(getSetting('storage.driver') === 'pushr'){
-                        $tempFileUrl = "https://{$tempFileUrl}";
-                    }
                     $jobData = [
                         'input' => ['url' => $tempFileUrl],
-                        "settings"=> [
-                            "ultrafast"=> true
-                        ],
                         'outputs' => [
                             'jpg:480x' => [
                                 'key' => 'jpg:medium',
                                 'path' => '/posts/videos/thumbnails/'.$fileId.'.jpg',
-                                "offsets" => [1],
+                                'offsets' => [1],
                             ],
                             'mp4' => [
                                 [
@@ -432,22 +427,40 @@ public static function createAttachment($file, $directory, $generateThumbnail)
                                     ],
                                 ]
                             ],
+                            'httpstream' => [
+                                'hls' => [
+                                    'path' => '/posts/videos/'.$fileId.'/hls.m3u8',
+                                    'variants' => [
+                                        'mp4:x:64k',
+                                        'mp4:240p::quality=2',
+                                        'mp4:480p::quality=3,maxrate=1500k',
+                                        'mp4:720p::quality=4,maxrate=3000k'
+                                    ]
+                                ]
+                            ]
                         ]
                     ];
-
+                    
+            
                     // Watermark
                     if (getSetting('media.apply_watermark')) {
                         if (getSetting('media.watermark_image')) {
-                            $jobData['outputs']['mp4'][0]['watermark']  =  [
+                            $jobData['outputs']['mp4'][0]['watermark'] = [
                                 'url' => self::getWatermarkPath(),
-                                'position' => 'bottomright'
+                                'position' => 'bottomright',
+                            ];
+                            $jobData['outputs']['hls'][0]['watermark'] = [
+                                'url' => self::getWatermarkPath(),
+                                'position' => 'bottomright',
                             ];
                         }
                     }
-
+            
+                    // Send the job to Coconut
                     $coconutJob = $coconut->job->create($jobData);
                 }
             }
+            
             else {
                 $filePath = $directory.'/'.$fileId.'.'.$fileExtension;
                 $storage->put($filePath, $fileContent, 'public');

@@ -68,3 +68,18 @@
         </div>
     </div>
 </nav>
+
+
+<script>
+    // Desativar botão direito
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // Desativar teclas F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+    document.addEventListener('keydown', (event) => {
+        if (event.code === "F12" || 
+            (event.ctrlKey && event.shiftKey && (event.code === "KeyI" || event.code === "KeyJ")) || 
+            (event.ctrlKey && event.code === "KeyU")) {
+            event.preventDefault();
+        }
+    });
+</script>

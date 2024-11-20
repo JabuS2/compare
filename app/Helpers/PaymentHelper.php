@@ -683,52 +683,60 @@ class PaymentHelper
         }
     }
 
-public function creditReceiverForTransaction($transaction)
-{
-    if ($transaction->type != null && $transaction->status == Transaction::APPROVED_STATUS) {
-        $user = User::query()->where('id', $transaction->recipient_user_id)->first();
-        if ($user != null) {
-            $userWallet = $user->wallet;
+    public function creditReceiverForTransaction($transaction)
+    {
+        if ($transaction->type != null && $transaction->status == Transaction::APPROVED_STATUS) {
+            $user = User::query()->where('id', $transaction->recipient_user_id)->first();
+            if ($user != null) {
+                $userWallet = $user->wallet;
+    
+                $amountWithTaxesDeducted = $transaction->amount;
+    
+                // Aplicar taxas se o tipo da transação não for 'deposit'
+                if ($transaction->type != 'deposit') {
+                    // Calculando as taxas
+                    // Exemplo de como adicionar logs para depuração
+                    $taxes = PaymentsServiceProvider::calculateTaxesForTransaction($transaction);
+                    Log::info('Taxas calculadas:', $taxes); // Isso vai registrar os valores das taxas no log
 
-            // Calculando os impostos
-            $taxes = PaymentsServiceProvider::calculateTaxesForTransaction($transaction);
-            $amountWithTaxesDeducted = $transaction->amount;
-            if (isset($taxes['inclusiveTaxesAmount'])) {
-                $amountWithTaxesDeducted -= $taxes['inclusiveTaxesAmount'];
+                    if (isset($taxes['inclusiveTaxesAmount'])) {
+                        Log::info('Taxa inclusiva antes de deduzir: ' . $taxes['inclusiveTaxesAmount']);
+                        $amountWithTaxesDeducted -= $taxes['inclusiveTaxesAmount'];
+                        Log::info('Montante após deduzir taxa inclusiva: ' . $amountWithTaxesDeducted);
+                    }
+
+                    if (isset($taxes['exclusiveTaxesAmount'])) {
+                        Log::info('Taxa exclusiva antes de deduzir: ' . $taxes['exclusiveTaxesAmount']);
+                        $amountWithTaxesDeducted -= $taxes['exclusiveTaxesAmount'];
+                        Log::info('Montante após deduzir taxa exclusiva: ' . $amountWithTaxesDeducted);
+                    }
+                }
+    
+                // Verifica se o payment_provider é 'stripe' para reter saldo
+                if ($transaction->payment_provider == 'stripe' && $transaction->type != 'deposit') {
+                    WalletRetainedBalance::create([
+                        'retained_balance' => $amountWithTaxesDeducted,
+                        'wallet_id' => $userWallet->id,
+                    ]);
+                } else {
+                    // Atualiza o saldo para outros provedores
+                    $userWallet->update(['total' => $userWallet->total + $amountWithTaxesDeducted]);
+                }
+    
+                // Armazena dados de pagamento suitpay na sessão
+                if ($transaction->payment_provider == 'suitpay') {
+                    Session::put('transaction_pixel', [
+                        'amount' => $transaction->amount,
+                        'currency' => $transaction->currency,
+                        'transaction_id' => $transaction->id,
+                    ]);
+                }
             }
-            if (isset($taxes['exclusiveTaxesAmount'])) {
-                $amountWithTaxesDeducted -= $taxes['exclusiveTaxesAmount'];
-            }
-
-            // Verificando se o payment_provider é 'stripe' e o tipo não é 'deposit'
-            if ($transaction->payment_provider == 'stripe' && $transaction->type != 'deposit') {
-                // Direcionar saldo para WalletRetainedBalance
-                WalletRetainedBalance::create([
-                    'retained_balance' => $amountWithTaxesDeducted,
-                    'wallet_id' => $user->wallet->id,
-                ]);
-            } else {
-                // Ajuste aqui: Atualizar saldo na carteira do usuário
-                $walletData = ['total' => $userWallet->total + $amountWithTaxesDeducted]; // Usar 'total' ao invés de 'retained_balance'
-                $userWallet->update($walletData);
-            }
-			
-			// collect suitpay payment data
-			$sessionData = [
-				'amount' => $transaction->amount,
-				'currency' => $transaction->currency,
-				'transaction_id' => $transaction->id,
-			];
-
-			// store suitpay payment data in session
-			Session::put('transaction_pixel', $sessionData);
-
-            //$this->send_meta_event_pixel("Purchase", $transaction);
-            //$this->send_google_event_pixel("Purchase", $transaction);
         }
     }
-}
-
+    
+    
+    
 
     public function updateTransactionByStripeSessionId($sessionId)
     {
@@ -1795,16 +1803,6 @@ public function creditReceiverForTransaction($transaction)
                 'email' => $user->email,
                 'document' => '927.300.300-18',
                 'phone' => $user->phone,
-                'address' => [
-                    'codIbge' => '5208707',
-                    'street' => $user->state,
-                    'number' => '150',
-                    'complement' => '',
-                    'zipCode' => $user->postcode,
-                    'neighborhood' => $user->city,
-                    'city' => $user->city,
-                    'state' => $user->state,
-                ]
             ],
         ];
 
@@ -1829,6 +1827,8 @@ public function creditReceiverForTransaction($transaction)
         $valid = false;
         if($transaction) {
             $exclusiveTaxesAmount = 0;
+
+
             $taxes = PaymentsServiceProvider::calculateTaxesForTransaction($transaction);
             if(isset($taxes['exclusiveTaxesAmount'])) {
                 $exclusiveTaxesAmount = $taxes['exclusiveTaxesAmount'];
@@ -2081,4 +2081,5 @@ public function creditReceiverForTransaction($transaction)
 
 
 }
+
 

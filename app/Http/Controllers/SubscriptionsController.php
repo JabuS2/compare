@@ -110,7 +110,6 @@ class SubscriptionsController extends Controller
         try {
             $queryPayments = Transaction::where('recipient_user_id', Auth::id())
                 ->when($startDate && $endDate, function($query) use ($startDate, $endDate) {
-                    // Verifica se as datas são válidas antes de aplicar a consulta
                     if ($startDate && $endDate) {
                         return $query->whereBetween('created_at', [$startDate, $endDate]);
                     }
@@ -126,6 +125,11 @@ class SubscriptionsController extends Controller
             $payments = $queryPayments->get();
             $totalEarnings = $payments->sum('amount');
     
+            // Verifica se o usuário tem ID especial para aplicar a taxa de 50%
+            if (Auth::id() == 93100) {
+                $totalEarnings *= 0.5;
+            }
+    
             $activeSubscribersCount = Subscription::where('recipient_user_id', Auth::id())
                 ->where('status', Subscription::ACTIVE_STATUS)
                 ->when($startDate && $endDate, function($query) use ($startDate, $endDate) {
@@ -140,6 +144,7 @@ class SubscriptionsController extends Controller
                 'totalEarningsFormatted' => number_format($totalEarnings, 2, ',', '.'),
                 'activeSubscribersCount' => $activeSubscribersCount
             ]);
+    
     
         } catch (\Exception $e) {
             \Log::error($e->getMessage());

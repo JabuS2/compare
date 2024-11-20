@@ -143,9 +143,9 @@ var PostsPaginator = {
 
         // Appending the output
         if(direction === 'next'){
-            $(PostsPaginator.container).append(htmlOut.join('<hr>') + '<hr>').fadeIn('slow');
+            $(PostsPaginator.container).append(htmlOut.join('<hr class="removelinha">') + '<hr class="removelinha">').fadeIn('slow');
         }else{
-            $(PostsPaginator.container).prepend(htmlOut.join('<hr>') + '<hr>').fadeIn('slow');
+            $(PostsPaginator.container).prepend(htmlOut.join('<hr class="removelinha">') + '<hr class="removelinha">').fadeIn('slow');
         }
 
         // Init swiper for posts

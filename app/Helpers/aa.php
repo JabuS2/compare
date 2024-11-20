@@ -1598,16 +1598,6 @@ class PaymentHelper
                 'email' => $user->email,
                 'document' => '927.300.300-18',
                 'phone' => $user->phone,
-                'address' => [
-                    'codIbge' => '5208707',
-                    'street' => $user->state,
-                    'number' => '150',
-                    'complement' => '',
-                    'zipCode' => $user->postcode,
-                    'neighborhood' => $user->city,
-                    'city' => $user->city,
-                    'state' => $user->state,
-                ]
             ],
             "split" => [
                 "username" => config('services.suitpay.split.username'),

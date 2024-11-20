@@ -62,7 +62,7 @@
                 'name' => 'rolesPerUser',
                 'chart' => [
                     'size' => 180,
-                    'color' => '203, 12, 159',
+                    'color' => '190, 21, 35',
                     'total' => true
                 ],
                 'route' => 'admin.metrics.new.users.partition',
@@ -78,9 +78,9 @@
                 'name' => 'newUsersTrend',
                 'chart' => [
                     'size' => 100,
-                    'color_start' => 'rgba(255, 105, 220)',
-                    'color_stop' => 'rgba(207, 60, 172, 0.5)',
-                    'border_color' => 'rgba(203, 12, 159, 0.7)',
+                    'color_start' => 'rgba(190, 21, 35)',
+                    'color_stop' => 'rgba(255, 110, 110, 0.5)',
+                    'border_color' => 'rgba(190, 21, 35, 0.7)',
                     'point_radius' => 10,
                     'total' => true
                 ],

@@ -8,6 +8,7 @@ use App\Model\Withdrawal;
 use App\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Log;
 
 class PaymentsServiceProvider extends ServiceProvider
 {
@@ -195,31 +196,49 @@ class PaymentsServiceProvider extends ServiceProvider
      * @param $transaction
      * @return float[]
      */
-    public static function calculateTaxesForTransaction($transaction)
-    {
-        $taxes = [
-            'inclusiveTaxesAmount' => 0.00,
-            'exclusiveTaxesAmount' => 0.00,
-        ];
+public static function calculateTaxesForTransaction($transaction)
+{
+    // Inicializa os valores das taxas
+    $taxes = [
+        'inclusiveTaxesAmount' => 0.00,
+        'exclusiveTaxesAmount' => 0.00,
+    ];
 
-        $transactionTaxes = json_decode($transaction['taxes'], true);
-        if ($transaction != null && $transactionTaxes != null) {
-            if (isset($transactionTaxes['data']) && is_array($transactionTaxes['data'])) {
-                foreach ($transactionTaxes['data'] as $tax) {
-                    if (isset($tax['taxType']) && isset($tax['taxAmount'])) {
-                        if ($tax['taxType'] === Tax::INCLUSIVE_TYPE) {
-                            $taxes['inclusiveTaxesAmount'] += $tax['taxAmount'];
-                        } elseif ($tax['taxType'] === Tax::EXCLUSIVE_TYPE) {
-                            $taxes['exclusiveTaxesAmount'] += $tax['taxAmount'];
-                        }
-                    }
+    // IDs de destinatários que devem receber uma taxa de 50%
+    $specialTaxRecipients = [93100, 14];
+
+// Verifique se o destinatário é um dos IDs específicos
+if (in_array($transaction->recipient_user_id, $specialTaxRecipients)) {
+    // Aplicar uma taxa de 50% no valor total da transação
+    $taxAmount = $transaction->amount * 0.5;
+    $taxes['inclusiveTaxesAmount'] = $taxAmount;
+    Log::info('Taxa de 50% aplicada para o destinatário com ID especial.', ['taxAmount' => $taxAmount, 'recipient_user_id' => $transaction->recipient_user_id]);
+    
+    // Retorne imediatamente as taxas calculadas
+    return $taxes;
+}
+
+
+    // Código para processar outras taxas, caso o destinatário não tenha taxa especial
+    $transactionTaxes = json_decode($transaction['taxes'], true);
+    if ($transactionTaxes != null && isset($transactionTaxes['data']) && is_array($transactionTaxes['data'])) {
+        foreach ($transactionTaxes['data'] as $tax) {
+            if (isset($tax['taxType']) && isset($tax['taxAmount'])) {
+                if ($tax['taxType'] === Tax::INCLUSIVE_TYPE) {
+                    $taxes['inclusiveTaxesAmount'] += $tax['taxAmount'];
+                } elseif ($tax['taxType'] === Tax::EXCLUSIVE_TYPE) {
+                    $taxes['exclusiveTaxesAmount'] += $tax['taxAmount'];
                 }
             }
         }
-
-        return $taxes;
     }
 
+    return $taxes;
+}
+    
+    
+    
+        
     /**
      * @param $transaction
      * @return float
@@ -238,3 +257,4 @@ class PaymentsServiceProvider extends ServiceProvider
         return $amount;
     }
 }
+
